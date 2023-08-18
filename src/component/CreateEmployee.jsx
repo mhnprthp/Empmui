@@ -1,54 +1,236 @@
 //import React from 'react';
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import { Container, Form, Button } from 'react-bootstrap';
-export default function CreateEmployee() {
-    // Assuming you get the data from an API or JSON file
-    const initialData = {
-        employeeDTO: {
-          id: '',
-          firstName: '',
-          lastName: '',
-          gender: '',
-          contactNo: '',
-          email: '',
-          status: true,
-        },  
-        salaryDTO: {
-          empID: '',
-          amount: '',
-          annual: true,
-          bonus: '',
-        },
-        attachmentDTO: {
-          empID: '',
-          fileName: '',
-          fileUrl: '',
-        },
-      };
+import { useDispatch } from 'react-redux';
+import {createEmployee,editEmployee} from '../redux/employeeActions';
+
+
+const initialData = {
+  employeeDTO: {
+    id: '',
+    firstName: '',
+    lastName: '',
+    gender: '',
+    contactNo: '',
+    email: '',
+    status: true,
+  },  
+  salaryDTO: {
+    empID: '',
+    amount: '',
+    annual: true,
+    bonus: '',
+  },
+  attachmentDTO: {
+    empID: '',
+    fileName: '',
+    fileUrl: '',
+  },
+};
+
+const CreateEmployee = ({employee,handleClose,showCreateButton }) => {
+  const dispatch = useDispatch();
+   
+  const [formErrors, setFormErrors] = useState({}); // State to hold form validation errors
 
   const [employeeData, setEmployeeData] = useState(initialData);
 
+
+  useEffect(() => {
+    if (employee) {
+      setEmployeeData({
+        employeeDTO: {
+          ...employee.employeeDTO,
+        },
+        salaryDTO: {
+          ...employee.salaryDTO,
+        },
+        attachmentDTO: {
+          ...employee.attachmentDTO,
+        },
+      });
+    } else {
+      setEmployeeData(initialData); 
+    }
+  }, [employee]);
+
+
   const handleChange = (event) => {
-    const { name, value } = event.target;
-    setEmployeeData((prevData) => ({
-      ...prevData,
-      employeeDTO: {
-        ...prevData.employeeDTO,
-        [name]: value,
-      },
-    }));
+    const { name, value, type, checked } = event.target;
+    const newValue = type === 'checkbox' ? checked : value;
+  
+    if (name === 'gender') {
+      setEmployeeData((prevData) => ({
+        ...prevData,
+        employeeDTO: {
+          ...prevData.employeeDTO,
+          gender: newValue,
+        },
+      }));
+    } else {
+      setEmployeeData((prevData) => ({
+        ...prevData,
+        employeeDTO: {
+          ...prevData.employeeDTO,
+          [name]: newValue,
+        },
+        salaryDTO: {
+          ...prevData.salaryDTO,
+          [name]: newValue,
+        },
+        attachmentDTO: {
+          ...prevData.attachmentDTO,
+          [name]: newValue,
+        },
+      }));
+    }
+  };
+  
+  
+  // const handleChange = (event) => {
+  //   const { name, value, type, checked } = event.target;
+  //   const newValue = type === 'checkbox' ? checked : value;
+
+  //   setEmployeeData((prevData) => ({
+  //     ...prevData,
+  //     employeeDTO: {
+  //       ...prevData.employeeDTO,
+  //       [name]: newValue,
+  //     },
+  //     salaryDTO: {
+  //       ...prevData.salaryDTO,
+  //       [name]: newValue,
+  //     },
+  //     attachmentDTO: {
+  //       ...prevData.attachmentDTO,
+  //       [name]: newValue,
+  //     },
+  //   }));
+  // };
+
+  const validateForm = () => {
+    const {
+      firstName,
+      lastName,
+      email,
+      amount,
+      bonus,
+    } = employeeData.employeeDTO;
+
+    const errors = {};
+
+    if (!firstName) {
+      errors.firstName = 'First Name is required.';
+    }
+
+    if (!lastName) {
+      errors.lastName = 'Last Name is required.';
+    }
+
+    if (!email) {
+      errors.email = 'Email is required.';
+    } else {
+      const emailRegex = /^\S+@\S+\.\S+$/;
+      if (!emailRegex.test(email)) {
+        errors.email = 'Invalid email address.';
+      }
+    }
+ 
+
+    const numericAmount = Number(employeeData.salaryDTO.amount);
+    if (!employeeData.salaryDTO.amount || isNaN(numericAmount) || numericAmount < 0) {
+      errors.amount = 'Salary amount must be a valid positive number.';
+    }
+    
+  
+    const numericBonus = Number(employeeData.salaryDTO.bonus);
+    if (!employeeData.salaryDTO.bonus || isNaN(numericBonus) || numericBonus < 0 || numericBonus > 100) {
+      errors.bonus = 'Bonus percentage must be between 0 and 100.';
+    }
+
+    setFormErrors(errors); // Update the formErrors state with the validation errors
+
+    return Object.keys(errors).length === 0; // If no errors, the form is valid
   };
 
   const handleSubmit = (event) => {
     event.preventDefault();
+
+   const isValidForm = validateForm(); // Call the function to validate the form
+    if (!isValidForm) {
+      // If the form is not valid, do not submit
+      return;
+    }
+
+    // Rest of the code for form submission
+    // ...
+    if(employeeData && employeeData.employeeDTO.id> 0)
+    {
+      debugger;
+      const flattenedData = {
+        employeeDTO: {
+          id: employeeData.employeeDTO.id,
+          firstName: employeeData.employeeDTO.firstName,
+          lastName: employeeData.employeeDTO.lastName,
+          gender: employeeData.employeeDTO.gender,
+          contactNo: employeeData.employeeDTO.contactNo,
+          email: employeeData.employeeDTO.email,
+          status: employeeData.employeeDTO.status,
+        },  
+        salaryDTO: {
+          empID: employeeData.salaryDTO.empID,
+          amount: employeeData.salaryDTO.amount,
+          annual: employeeData.salaryDTO.annual,
+          bonus: employeeData.salaryDTO.bonus,
+        },
+        attachmentDTO: {
+          empID: employeeData.attachmentDTO.empID,
+          fileName: employeeData.attachmentDTO.fileName,
+          fileUrl: employeeData.attachmentDTO.fileUrl,
+        },
+      };
+
+      dispatch(editEmployee(flattenedData.employeeDTO.id,flattenedData));
+     // setFormErrors({});
+      handleClose();
+
+    }
+    else{
+    const flattenedData = {
+      employeeDTO: {
+       // id: employeeData.employeeDTO.id,
+        firstName: employeeData.employeeDTO.firstName,
+        lastName: employeeData.employeeDTO.lastName,
+        gender: employeeData.employeeDTO.gender,
+        contactNo: employeeData.employeeDTO.contactNo,
+        email: employeeData.employeeDTO.email,
+        status: employeeData.employeeDTO.status,
+      },  
+      salaryDTO: {
+       // empID: employeeData.salaryDTO.empID,
+        amount: employeeData.salaryDTO.amount,
+        annual: employeeData.salaryDTO.annual,
+        bonus: employeeData.salaryDTO.bonus,
+      },
+      attachmentDTO: {
+       // empID: employeeData.attachmentDTO.empID,
+        fileName: employeeData.attachmentDTO.fileName,
+        fileUrl: employeeData.attachmentDTO.fileUrl,
+      },
+    };
+    
     // Here you can submit the data to the server or handle the form submission
-    console.log(employeeData);
+  //  console.log(flattenedData);
+    dispatch(createEmployee(flattenedData));
+    handleClose();
+    }
+   
   };
 
   return (
     <Container>
-      <h1>Create Employee</h1>
-      <Form onSubmit={handleSubmit}>
+     
+      <Form onSubmit={handleSubmit} noValidate className="mt-4">
         <Form.Group controlId="firstName">
           <Form.Label>First Name</Form.Label>
           <Form.Control
@@ -57,7 +239,9 @@ export default function CreateEmployee() {
             name="firstName"
             value={employeeData.employeeDTO.firstName}
             onChange={handleChange}
+            isInvalid={!!formErrors.firstName}
           />
+          <Form.Control.Feedback type="invalid">{formErrors.firstName}</Form.Control.Feedback>
         </Form.Group>
 
         <Form.Group controlId="lastName">
@@ -68,7 +252,9 @@ export default function CreateEmployee() {
             name="lastName"
             value={employeeData.employeeDTO.lastName}
             onChange={handleChange}
+            isInvalid={!!formErrors.lastName}
           />
+          <Form.Control.Feedback type="invalid">{formErrors.lastName}</Form.Control.Feedback>
         </Form.Group>
 
         <Form.Group controlId="gender">
@@ -103,7 +289,9 @@ export default function CreateEmployee() {
             name="email"
             value={employeeData.employeeDTO.email}
             onChange={handleChange}
+            isInvalid={!!formErrors.email}
           />
+           <Form.Control.Feedback type="invalid">{formErrors.email}</Form.Control.Feedback>
         </Form.Group>
 
         <Form.Group controlId="status">
@@ -127,7 +315,9 @@ export default function CreateEmployee() {
             name="amount"
             value={employeeData.salaryDTO.amount}
             onChange={handleChange}
+            isInvalid={!!formErrors.amount}
           />
+          <Form.Control.Feedback type="invalid">{formErrors.amount}</Form.Control.Feedback>
         </Form.Group>
 
         <Form.Group controlId="annual">
@@ -141,14 +331,16 @@ export default function CreateEmployee() {
         </Form.Group>
 
         <Form.Group controlId="bonus">
-          <Form.Label>Bonus (%)</Form.Label>
+          <Form.Label>Bonus </Form.Label>
           <Form.Control
             type="number"
             placeholder="Enter bonus percentage"
             name="bonus"
             value={employeeData.salaryDTO.bonus}
             onChange={handleChange}
+            isInvalid={!!formErrors.bonus}
           />
+          <Form.Control.Feedback type="invalid">{formErrors.bonus}</Form.Control.Feedback>
         </Form.Group>
 
         <Form.Group controlId="fileName">
@@ -160,6 +352,8 @@ export default function CreateEmployee() {
             value={employeeData.attachmentDTO.fileName}
             onChange={handleChange}
           />
+            <Form.Control.Feedback type="invalid">{formErrors.firstName}</Form.Control.Feedback>
+      
         </Form.Group>
 
         <Form.Group controlId="fileUrl">
@@ -172,11 +366,15 @@ export default function CreateEmployee() {
             onChange={handleChange}
           />
         </Form.Group>
-
-        <Button variant="primary" type="submit">
-          Create Employee
+        <div className="text-center">
+        {showCreateButton && (
+        <Button variant="primary" type="submit" className="mt-3 mb-2">
+        {employee ? "Update Employee" : "Create Employee"}
         </Button>
+        )}
+        </div>
       </Form>
     </Container>
   )
 }
+export default CreateEmployee;
